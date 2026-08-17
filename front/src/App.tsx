@@ -1,5 +1,7 @@
+import Post from "./components/post/Index";
+
 function App() {
-  return <div>hello</div>;
+  return <Post />;
 }
 
 export default App;

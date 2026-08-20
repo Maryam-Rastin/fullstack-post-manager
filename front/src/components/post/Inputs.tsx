@@ -6,6 +6,8 @@ const DEFAULT_INPUT_VALUE = {
 };
 
 const Inputs: FC = () => {
+  //useMutation()
+
   const [input, setInput] =
     useState<Record<"title" | "content", string>>(DEFAULT_INPUT_VALUE);
 
@@ -16,7 +18,8 @@ const Inputs: FC = () => {
     setInput({ ...input, [name]: value });
   };
 
-  const onSubmitClick = () => console.log("submit");
+  const onSubmitClick = () => {
+    console.log("submit");}
   return (
     <div>
       <label className="form-control w-full">

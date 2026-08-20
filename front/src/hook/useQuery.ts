@@ -7,27 +7,31 @@ export default function useQuery<T>(url: string, lazy = false) {
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
 
-  const runQuery = useCallback(async () => {
-    setLoading(true);
-    setError(undefined);
+  const handleError = (error: unknown) => {
+    if (error instanceof Error) setError(error.message);
+  };
 
+  const handleSuccess = async () => {
+    const res: AxiosResponse<T> = await Axios.get<T>(url);
+    setData(res.data);
+  };
+
+  // this function is calling useCallback to stop an infinite loop since it is in the dependency array of useEffect
+  const runQuery = useCallback(() => {
+    setLoading(true);
     try {
-      const res: AxiosResponse<T> = await Axios.get(url);
-      setData(res.data);
+      handleSuccess();
     } catch (e) {
-      if (e instanceof Error) {
-        setError(e.message);
-      }
+      handleError(e);
     } finally {
       setLoading(false);
     }
   }, [url]);
 
   useEffect(() => {
-    if (!lazy) {
-      runQuery();
-    }
-  }, [runQuery, lazy]);
+    if (!lazy) runQuery();
 
-  return { data, error, loading, refetch: runQuery };
+  }, [runQuery]);
+
+  return { data, loading, error, refetch: runQuery };
 }

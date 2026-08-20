@@ -10,9 +10,9 @@ const List: FC = () => {
   useEffect(() => {
     dispatch({
       type: PostActionTypes.SET_POSTS,
-      payload: query.data as Post,
+      payload: query.data as Post[],
     });
-  });
+  }, [query.data, dispatch]);
   return (
     <div className="flex flex-col gap-3 mt-5">
       {postState?.posts?.length > 0 ? (

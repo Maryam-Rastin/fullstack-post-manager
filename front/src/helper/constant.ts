@@ -9,6 +9,12 @@ export const PostActionTypes = {
   SET_POSTS: "SET_POSTS",
 } as const;
 
+export const HttpMethod = {
+  GET: "get",
+  POST: "post",
+  PUT: "put",
+  DELETE: "delete",
+} as const;
 export const InitialPostState: PostState = {
   selectedPost: { id: "", title: "", content: "" },
   posts: [{ id: "1", title: "test", content: "test" }],

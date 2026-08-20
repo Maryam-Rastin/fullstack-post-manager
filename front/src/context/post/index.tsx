@@ -11,6 +11,7 @@ import { PostReducer } from "../../reducers/post";
 import { InitialPostState } from "../../helper/constant";
 import type { Post, PostAction, PostState } from "../..";
 import useQuery from "../../hook/useQuery";
+import { useDebounce } from "../../hook/useDebounce";
 
 type ProviderProps = {
   children: React.ReactNode;
@@ -29,6 +30,7 @@ const PostProvider: FC<ProviderProps> = ({ children }) => {
   const [search, setSearch] = useState("");
   const [queryUrl, setQueryUrl] = useState("post");
 
+  const debounceSearch = useDebounce(search);
   const query = useQuery<Post[]>(queryUrl);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ const PostProvider: FC<ProviderProps> = ({ children }) => {
     } else {
       setQueryUrl("post");
     }
-  }, [search]);
+  }, [debounceSearch]);
 
   const value = {
     postState,

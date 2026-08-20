@@ -6,12 +6,17 @@ type Post = {
   content: string;
 };
 
-type PostState={
-  posts:Post[]
-  selectedPost:Post
-}
-
-type PostAction = {
-  type: PostActionTypes
-  payload: Post;
+type PostState = {
+  posts: Post[];
+  selectedPost: Post | null;
 };
+
+type PostAction =
+  | {
+      type: PostActionTypes.SET_POSTS;
+      payload: Post[];
+    }
+  | {
+      type: PostActionTypes.SET_SELECTED_POST;
+      payload: Post;
+    };

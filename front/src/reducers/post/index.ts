@@ -39,11 +39,11 @@ export const PostReducer = (state: PostState, action: PostAction) => {
     }
 
     case PostActionTypes.DELETE_POST: {
-      const id = action.payload;
+      const _post = action.payload;
 
       return {
         selectedPost: InitialPostState.selectedPost,
-        posts: [...state.posts.filter((post) => post.id == id?.toString())],
+        posts: state.posts.filter((post) => post.id !== _post.id),
       };
     }
 
@@ -57,7 +57,6 @@ export const PostReducer = (state: PostState, action: PostAction) => {
       };
     }
     default:
-      const otheraction = action.type;
-      return otheraction;
+      return state;
   }
 };

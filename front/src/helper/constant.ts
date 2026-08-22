@@ -15,6 +15,7 @@ export const HttpMethod = {
   PUT: "put",
   DELETE: "delete",
 } as const;
+
 export const InitialPostState: PostState = {
   selectedPost: { id: "", title: "", content: "" },
   posts: [{ id: "1", title: "test", content: "test" }],

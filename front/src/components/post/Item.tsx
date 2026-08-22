@@ -1,11 +1,25 @@
-import React, { type FC } from "react";
+import React, { useContext, type FC } from "react";
 import { EditIcon } from "../../icons/EditIcon";
 import { DeleteIcon } from "../../icons/DeleteIcon";
 import type { Post } from "../..";
+import { PostContext } from "../../context/post";
+import { HttpMethod, PostActionTypes } from "../../helper/constant";
+import useMutation from "../../hook/useMutation";
+
 const Item: FC<Post> = (post) => {
   const { id, title, content } = post;
-  const onclickEdit = (post: Post) => console.log("Edit", post);
-  const onclickDelete = (id: string) => console.log("Delete", id);
+  const { dispatch } = useContext(PostContext)!;
+  const { execute } = useMutation();
+
+  const onclickEdit = (post: Post) => {
+    console.log("Edit", post);
+    dispatch({ type: PostActionTypes.SET_POST, payload: post });
+  };
+  const onclickDelete = (id: string) => {
+    console.log("Delete", id);
+    dispatch({ type: PostActionTypes.DELETE_POST, payload: post });
+    execute({ url: `post/${id}`, method: HttpMethod.DELETE });
+  };
 
   return (
     <div>

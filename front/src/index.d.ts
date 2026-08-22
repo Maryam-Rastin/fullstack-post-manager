@@ -8,15 +8,14 @@ type Post = {
 
 type PostState = {
   posts: Post[];
-  selectedPost: Post | null;
+  selectedPost: Post;
 };
 
 type PostAction =
-  | {
-      type: PostActionTypes.SET_POSTS;
-      payload: Post[];
-    }
-  | {
-      type: PostActionTypes.SET_SELECTED_POST;
-      payload: Post;
-    };
+  | { type: typeof PostActionTypes.ADD_POST; payload: Post }
+  | { type: typeof PostActionTypes.EDIT_POST; payload: Post }
+  | { type: typeof PostActionTypes.DELETE_POST; payload: Post }
+  | { type: typeof PostActionTypes.SET_POST; payload: Post }
+  | { type: typeof PostActionTypes.SET_POSTS; payload: Post[] };
+
+export type { Post, PostState, PostAction };

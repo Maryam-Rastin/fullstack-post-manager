@@ -2,6 +2,8 @@
 
 A full-stack post management application with a custom Express + TypeScript backend, PostgreSQL database, and a React frontend — built end-to-end rather than relying on a managed backend-as-a-service.
 
+**Live demo:** [https://fullstack-post-manager.vercel.app/](https://fullstack-post-manager.vercel.app/)
+
 ## Overview
 
 Full-Stack Post Manager is a complete post management app supporting create, read, update, delete, and search operations. Unlike a typical frontend-only project, this one implements its own REST API from scratch: a type-safe Express backend with PostgreSQL via Drizzle ORM, request validation with Zod, and a containerized local database setup with Docker.
@@ -49,7 +51,9 @@ The frontend is built with React and TypeScript, using the Context API with `use
 
 ### Tooling & Infrastructure
 
-* Docker & Docker Compose
+* Docker & Docker Compose (local database)
+* Vercel (frontend and API hosting)
+* Neon (serverless PostgreSQL)
 * Nodemon
 * ESLint
 
@@ -140,6 +144,29 @@ npm install
 npm run dev
 ```
 
+## Deployment
+
+The app is deployed on **Vercel** as two projects from this one repository, with a **Neon** PostgreSQL database:
+
+| Part | Vercel root directory | Notes |
+| ---- | --------------------- | ----- |
+| API (Express) | `back` | Exports the Express app; Vercel runs it as a serverless function |
+| Frontend (Vite + React) | `front` | Built with `npm run build` |
+
+Setup summary:
+
+1. Import the repo into Vercel as the API project with **Root Directory** set to `back`.
+2. Add a **Neon** database from the Vercel Marketplace and connect it to the API project with the prefix `POSTGRES`, which creates the `POSTGRES_URL` variable the backend reads.
+3. Run the migrations once against the hosted database: put `POSTGRES_URL` in `back/.env` and run `npm run migrate`.
+4. Redeploy the API, then check `/api/post` returns `[]`.
+5. Import the repo again as the frontend project with **Root Directory** set to `front`, and add the environment variable `VITE_API_URL` with the value `https://<your-api>.vercel.app/api`.
+
+Notes:
+
+* `VITE_API_URL` is baked in at build time, so redeploy the frontend if the API URL changes. Without it, the frontend uses `http://localhost:3001/api/` for local development.
+* The database runs on Neon's free tier, which can suspend when idle, so the first request after a quiet period may take a few seconds.
+* The demo has no authentication, so anyone can add and delete posts.
+
 ## Learning Objectives
 
 This project was built to strengthen skills in:
@@ -157,7 +184,6 @@ This project was built to strengthen skills in:
 * User authentication and authorization
 * Pagination for the post list
 * Image uploads for posts
-* Deploying the backend to a live host with a public demo
 * Automated tests for API endpoints
 * Rate limiting
 

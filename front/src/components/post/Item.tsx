@@ -1,4 +1,4 @@
-import React, { useContext, type FC } from "react";
+import { useContext, type FC } from "react";
 import { EditIcon } from "../../icons/EditIcon";
 import { DeleteIcon } from "../../icons/DeleteIcon";
 import type { Post } from "../..";

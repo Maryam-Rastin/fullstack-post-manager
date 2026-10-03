@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, type FC } from "react";
+import { useContext, useEffect, type FC } from "react";
 import PostItem from "./Item";
 import { PostContext } from "../../context/post";
 import { PostActionTypes } from "../../helper/constant";

@@ -6,7 +6,7 @@ async function main() {
   try {
     console.log("migrating...");
 
-    const pool = new Pool({ connectionString: process.env.POSTGRES_URL });
+    const pool = new Pool({ connectionString: process.env.POSTGRES_URL ?? process.env.DATABASE_URL });
     const db: NodePgDatabase = drizzle(pool);
     await migrate(db, { migrationsFolder: "src/db/drizzle" });
 

@@ -1,4 +1,4 @@
-import React, { type FC } from "react";
+import { type FC } from "react";
 import PostHeader from "./Header";
 import PostInput from "./Inputs";
 import PostList from "./List";

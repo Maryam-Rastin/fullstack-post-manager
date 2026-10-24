@@ -16,11 +16,10 @@ export default function useQuery<T>(url: string, lazy = false) {
     setData(res.data);
   };
 
-  // this function is calling useCallback to stop an infinite loop since it is in the dependency array of useEffect
-  const runQuery = useCallback(() => {
+  const runQuery = useCallback(async () => {
     setLoading(true);
     try {
-      handleSuccess();
+      await handleSuccess();
     } catch (e) {
       handleError(e);
     } finally {
@@ -30,7 +29,6 @@ export default function useQuery<T>(url: string, lazy = false) {
 
   useEffect(() => {
     if (!lazy) runQuery();
-
   }, [runQuery]);
 
   return { data, loading, error, refetch: runQuery };

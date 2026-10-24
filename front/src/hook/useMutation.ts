@@ -35,13 +35,13 @@ export default function useMutation<T>() {
 
   const handleError = (error: unknown) => {
     if (error instanceof Error) setError(error.message);
-      toast.error("Something isn't right!");
+    toast.error("Something isn't right!");
   };
 
-  const runMutation = useCallback((options: MutationOptions) => {
+  const runMutation = useCallback(async (options: MutationOptions) => {
     setLoading(true);
     try {
-      handleSuccess(options);
+      await handleSuccess(options);
     } catch (e) {
       handleError(e);
     } finally {

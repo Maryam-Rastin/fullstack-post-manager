@@ -1,6 +1,6 @@
 # Full-Stack Post Manager
 
-A full-stack post management application with a custom Express + TypeScript backend, PostgreSQL database, and a React frontend — built end-to-end rather than relying on a managed backend-as-a-service.
+A full-stack post management application with a custom Express + TypeScript backend, PostgreSQL database, and a React frontend — built end-to-end rather than relying on a managed backend-as-a-service, and covered by automated tests on both sides.
 
 **Live demo:** [https://fullstack-post-manager.vercel.app/](https://fullstack-post-manager.vercel.app/)
 
@@ -10,52 +10,63 @@ Full-Stack Post Manager is a complete post management app supporting create, rea
 
 The frontend is built with React and TypeScript, using the Context API with `useReducer` for state management — a discriminated-union action model rather than a single flat action shape — paired with small, reusable data-fetching hooks (`useQuery`, `useMutation`) instead of a heavier data-fetching library.
 
+The project has an automated test suite: 15 tests for the API routes and request validation on the backend, and 37 tests for the reducer, hooks, and components on the frontend. Writing and running those tests led to two real bug fixes (see [Testing](#testing)).
+
 ## Features
 
-* Create, edit, and delete posts
-* Debounced live search across posts
-* Real-time UI feedback via toast notifications
-* Type-safe REST API with schema validation on every request
-* Centralized frontend state via Context + `useReducer`
-* Fully containerized local database (PostgreSQL + Adminer via Docker Compose)
-* Responsive, utility-first UI styling
+- Create, edit, and delete posts
+- Debounced live search across posts
+- Real-time UI feedback via toast notifications
+- Type-safe REST API with schema validation on every request
+- Centralized frontend state via Context + `useReducer`
+- Fully containerized local database (PostgreSQL + Adminer via Docker Compose)
+- Automated tests for the backend API and the frontend state, hooks, and form
+- Responsive, utility-first UI styling
 
 ## Tech Stack
 
 ### Frontend
 
-* React 19
-* TypeScript
-* Vite
-* Tailwind CSS
-* DaisyUI
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- DaisyUI
 
 ### State Management
 
-* React Context API
-* `useReducer` with discriminated-union action types
+- React Context API
+- `useReducer` with discriminated-union action types
 
 ### Additional Libraries
 
-* Axios
-* React Toastify
+- Axios
+- React Toastify
 
 ### Backend
 
-* Node.js
-* Express 5
-* TypeScript
-* PostgreSQL
-* Drizzle ORM
-* Zod (schema validation via `drizzle-zod`)
+- Node.js
+- Express 5
+- TypeScript
+- PostgreSQL
+- Drizzle ORM
+- Zod (schema validation via `drizzle-zod`)
+
+### Testing
+
+- Vitest (frontend and backend)
+- React Testing Library (hooks and components)
+- MSW — Mock Service Worker (fake API for frontend tests)
+- jsdom
+- Supertest (HTTP tests for the Express API)
 
 ### Tooling & Infrastructure
 
-* Docker & Docker Compose (local database)
-* Vercel (frontend and API hosting)
-* Neon (serverless PostgreSQL)
-* Nodemon
-* ESLint
+- Docker & Docker Compose (local database)
+- Vercel (frontend and API hosting)
+- Neon (serverless PostgreSQL)
+- Nodemon
+- ESLint
 
 ## Screenshots
 
@@ -76,8 +87,10 @@ fullstack-post-manager/
 │   │   ├── services/         # Business logic
 │   │   ├── validator/        # Zod request validation
 │   │   └── index.ts
+│   ├── tests/                # API route and validation tests
 │   ├── docker-compose.yml    # PostgreSQL + Adminer
 │   ├── drizzle.config.ts
+│   ├── vitest.config.mts
 │   └── package.json
 ├── front/
 │   ├── src/
@@ -86,10 +99,14 @@ fullstack-post-manager/
 │   │   ├── hook/             # useQuery, useMutation, useDebounce
 │   │   ├── reducers/
 │   │   ├── config/           # Axios client
-│   │   └── helper/           # Action types & constants
+│   │   ├── helper/           # Action types & constants
+│   │   ├── test/             # MSW server shared by tests
+│   │   └── setupTests.ts     # Global test setup
 │   └── package.json
 └── README.md
 ```
+
+Frontend test files sit next to the code they test (for example `reducers/post/index.test.ts` and `hook/useQuery.test.ts`).
 
 ## Installation
 
@@ -144,14 +161,46 @@ npm install
 npm run dev
 ```
 
+## Testing
+
+Both `back` and `front` use Vitest. Run a single pass in either folder with:
+
+```
+npx vitest run
+```
+
+`npm test` starts the same suite in watch mode instead. The tests never touch a real database or the live API.
+
+### Backend (15 tests)
+
+- **Route tests** (`back/tests/post.routes.test.ts`, 11 tests) — send real HTTP requests to the Express app with Supertest, with the service layer mocked. They cover status codes, 404 responses for missing posts, the search query being passed through, and that only `title` and `content` reach the service.
+- **Validation tests** (`back/tests/post.validation.test.ts`, 4 tests) — run the real services and Zod schema against a mocked database, and check that invalid input (an empty body, a wrong type, or a title over 256 characters) is rejected with a 400 before it reaches the database.
+- The Vitest config sets a dummy `POSTGRES_URL`, so a test can never connect to a hosted database by accident.
+
+### Frontend (37 tests)
+
+- **Reducer** (10 tests) — every action type of the discriminated-union reducer, including unknown ids and state immutability.
+- **`useDebounce`** (5 tests) — fake timers check the initial value, the default and custom delays, and that the timer restarts when the value changes.
+- **Data hooks** (14 tests) — `useQuery` and `useMutation` tested against a fake API built with MSW: successful requests, refetching on URL change, lazy queries, sending the correct method and body, returning the response data, 500 responses, network failures, and loading states.
+- **Post list** (3 tests) — the real `PostProvider`, `useQuery`, and `Item` working together against the fake API: listing posts, the empty state, and deleting a post.
+- **Post form** (5 tests) — adding a post sends only `title` and `content` and uses the id the server returns, a failed save neither adds the post nor clears the form, titles under 4 characters are rejected, and edit mode pre-fills the form and updates the post.
+
+### Bugs fixed along the way
+
+**Hooks never reported errors or loading correctly.** Writing error-handling tests for `useQuery` and `useMutation` showed that the request wasn't awaited inside the `try/catch`, so failed requests became unhandled promise rejections and `loading` reset immediately. The tests were written first and failed, then the hooks were fixed by awaiting the request, and the tests passed. A failed save or delete now shows the error toast instead of failing silently.
+
+**A new post could not be edited or deleted until the page was refreshed.** The form generated its own random id and displayed the post with it, while the database generated a different UUID. Editing or deleting the post straight after creating it sent the wrong id and failed with a 400. The form now sends only `title` and `content` and adds the post using the id returned by the server, and `useMutation` returns the response data so the form can use it. If the request fails, the post is not added and the form keeps what was typed.
+
+Both fixes are covered by tests. The history of the testing work is in [pull request #1](https://github.com/Maryam-Rastin/fullstack-post-manager/pull/1) and the `add-tests` branch.
+
 ## Deployment
 
 The app is deployed on **Vercel** as two projects from this one repository, with a **Neon** PostgreSQL database:
 
-| Part | Vercel root directory | Notes |
-| ---- | --------------------- | ----- |
-| API (Express) | `back` | Exports the Express app; Vercel runs it as a serverless function |
-| Frontend (Vite + React) | `front` | Built with `npm run build` |
+| Part                    | Vercel root directory | Notes                                                            |
+| ----------------------- | --------------------- | ---------------------------------------------------------------- |
+| API (Express)           | `back`                | Exports the Express app; Vercel runs it as a serverless function |
+| Frontend (Vite + React) | `front`               | Built with `npm run build`                                       |
 
 Setup summary:
 
@@ -163,39 +212,45 @@ Setup summary:
 
 Notes:
 
-* `VITE_API_URL` is baked in at build time, so redeploy the frontend if the API URL changes. Without it, the frontend uses `http://localhost:3001/api/` for local development.
-* The database runs on Neon's free tier, which can suspend when idle, so the first request after a quiet period may take a few seconds.
-* The demo has no authentication, so anyone can add and delete posts.
+- `VITE_API_URL` is baked in at build time, so redeploy the frontend if the API URL changes. Without it, the frontend uses `http://localhost:3001/api/` for local development.
+- The database runs on Neon's free tier, which can suspend when idle, so the first request after a quiet period may take a few seconds.
+- The demo has no authentication, so anyone can add and delete posts.
 
 ## Learning Objectives
 
 This project was built to strengthen skills in:
 
-* Designing and building a REST API from scratch with Express and TypeScript
-* Database schema design and migrations with Drizzle ORM
-* Request validation with Zod
-* Containerized local development with Docker and Docker Compose
-* Type-safe state management using discriminated union action types
-* Building small, reusable, generic data-fetching hooks
-* Debugging real full-stack issues across the network, build tooling, and type system
+- Designing and building a REST API from scratch with Express and TypeScript
+- Database schema design and migrations with Drizzle ORM
+- Request validation with Zod
+- Containerized local development with Docker and Docker Compose
+- Type-safe state management using discriminated union action types
+- Building small, reusable, generic data-fetching hooks
+- Writing automated tests for an API (Vitest, Supertest) and for React state, hooks, and components (React Testing Library, MSW)
+- Debugging real full-stack issues across the network, build tooling, and type system
 
 ## Future Improvements
 
-* User authentication and authorization
-* Pagination for the post list
-* Image uploads for posts
-* Automated tests for API endpoints
-* Rate limiting
+- Wait for the server to confirm an edit or delete before updating the post list (a failed delete currently hides the post until the page is refreshed)
+- Stricter server-side validation, such as a minimum title length that matches the form
+- User authentication and authorization
+- Pagination for the post list
+- Image uploads for posts
+- Rate limiting
 
 ## What I Learned
 
 Building the backend from scratch — rather than using a managed service — meant handling things I hadn't dealt with directly before: designing a Postgres schema, writing and running real migrations, validating incoming requests before they ever touch the database, and containerizing the whole local setup with Docker so it's reproducible. On the frontend, moving from a single flat action type to a proper discriminated union clarified how much stronger TypeScript's type checking becomes once each action case is modeled with its own exact shape, instead of one type trying to fit everything. I also got a lot of practice diagnosing real full-stack issues end to end — tracing a 400 response back to a validator, a blank screen back to a missing context provider, and a hook crash back to a duplicate package installation.
 
+Adding tests taught me a different way of finding problems. Testing the backend meant deciding what to mock at each layer: the service layer to test the HTTP behavior, and the database to test validation with the real services. Testing the frontend with a fake API showed how a test environment can differ from a browser (for example, the fake browser treating requests to the API as cross-origin). Writing failing tests first exposed a real bug in my data-fetching hooks that I hadn't noticed, and watching the same tests turn green after the fix showed me the value of test-first development.
+
+The second bug taught me the limits of mocking. The frontend tests faked the API and the backend tests faked the database, so neither side could notice that the client and the database were using different ids for the same post. I only found it by using the app and deleting a post I had just created. Fixing it meant making the server the single source of truth for ids, and the experience reminded me that tests with fakes need to be paired with checking the real thing.
+
 ## Author
 
 **Maryam Rastin**
 
-GitHub: https://github.com/Maryam-Rastin
+GitHub: [https://github.com/Maryam-Rastin](https://github.com/Maryam-Rastin)
 
 ## License
 

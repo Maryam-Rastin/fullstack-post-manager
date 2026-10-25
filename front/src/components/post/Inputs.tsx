@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState, type FC } from "react";
 import { PostContext } from "../../context/post";
 import useMutation from "../../hook/useMutation";
 import { HttpMethod, PostActionTypes } from "../../helper/constant";
-import { randomId } from "../../helper/utils";
+import type { Post } from "../../index";
 import { z } from "zod";
 import { toast } from "react-toastify";
 
@@ -21,7 +21,7 @@ const inputSchema = z.object({
 const Inputs: FC = () => {
   //value = useMutation()
   const { postState, dispatch } = useContext(PostContext)!;
-  const { execute } = useMutation();
+  const { execute } = useMutation<Post>();
 
   const [input, setInput] =
     useState<Record<"title" | "content", string>>(DEFAULT_INPUT_VALUE);
@@ -33,13 +33,17 @@ const Inputs: FC = () => {
     setInput({ ...input, [name]: value });
   };
 
-  const onAdd = () => {
-    const post = { id: randomId(), ...input };
-    execute({ url: "post", method: HttpMethod.POST, body: post });
-    dispatch({
-      type: PostActionTypes.ADD_POST,
-      payload: post,
+  const onAdd = async (): Promise<boolean> => {
+    // The server generates the id; use the post it sends back
+    const created = await execute({
+      url: "post",
+      method: HttpMethod.POST,
+      body: input,
     });
+    if (!created) return false;
+
+    dispatch({ type: PostActionTypes.ADD_POST, payload: created });
+    return true;
   };
 
   const onEdit = () => {
@@ -55,22 +59,23 @@ const Inputs: FC = () => {
     });
   };
 
-  const onSubmitClick = () => {
+  const onSubmitClick = async () => {
     try {
       inputSchema.parse(input);
 
       if (postState.selectedPost.id !== "") {
         onEdit();
-      } else {
-        onAdd();
+        setInput({ ...DEFAULT_INPUT_VALUE });
+      } else if (await onAdd()) {
+        setInput({ ...DEFAULT_INPUT_VALUE });
       }
-      setInput({ ...DEFAULT_INPUT_VALUE });
     } catch (e) {
       if (e instanceof z.ZodError) {
         toast.error(JSON.parse(e.toString())[0].message);
       }
     }
   };
+
   useEffect(() => {
     setInput({
       title: postState.selectedPost.title,

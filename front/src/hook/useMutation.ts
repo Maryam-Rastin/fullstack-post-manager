@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 type MutationOptions = {
   url: string;
   method: (typeof HttpMethod)[keyof typeof HttpMethod];
-  body?: Post | null;
+  body?: Pick<Post, "title" | "content"> | null;
 };
 
 export default function useMutation<T>() {
@@ -16,7 +16,7 @@ export default function useMutation<T>() {
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
 
-  const handleSuccess = async (options: MutationOptions) => {
+  const handleSuccess = async (options: MutationOptions): Promise<T> => {
     let res: AxiosResponse<T>;
 
     switch (options.method) {
@@ -31,6 +31,7 @@ export default function useMutation<T>() {
     }
 
     setData(res.data);
+    return res.data;
   };
 
   const handleError = (error: unknown) => {
@@ -38,15 +39,19 @@ export default function useMutation<T>() {
     toast.error("Something isn't right!");
   };
 
-  const runMutation = useCallback(async (options: MutationOptions) => {
-    setLoading(true);
-    try {
-      await handleSuccess(options);
-    } catch (e) {
-      handleError(e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const runMutation = useCallback(
+    async (options: MutationOptions): Promise<T | undefined> => {
+      setLoading(true);
+      try {
+        return await handleSuccess(options);
+      } catch (e) {
+        handleError(e);
+        return undefined;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
   return { data, loading, error, execute: runMutation };
 }
